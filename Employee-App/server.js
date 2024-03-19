@@ -15,19 +15,7 @@ let employee = [
     id: 1,
     name: "Duc Minh",
     uniqueNum: "112",
-    timeRecord: [
-      {
-        date: new Date().toLocaleString(),
-        startTime: null,
-        endTime: null,
-        totalWorkingHours: 0,
-      },
-    ],
-  },
-  {
-    id: 2,
-    name: "John Doe",
-    uniqueNum: "1234",
+    timeRecord: [],
   },
 ];
 
@@ -37,11 +25,16 @@ app.get("/", (req, res) => {
 
 app.post("/check-in", (req, res) => {
   const pin = req.body.pin; // get the pin from the request body
+  const selection = req.body.selection;
   console.log(typeof pin);
   const result = employee.find((emp) => parseInt(emp.uniqueNum) === pin); // find the employee with the given pin
   console.log(result);
   if (result) {
-    res.status(201).send({ message: "you've been successfully checked in" });
+    if (selection === "clock-in") {
+      res.redirect(`/clock-in/${pin}`);
+    } else if (selection === "clock-out") {
+      res.redirect(`/clock-out/${pin}`);
+    }
   } else {
     res.status(404).send({ message: "invalid pin" });
   }
@@ -53,10 +46,15 @@ app.get("/clock-in/:id", (req, res) => {
   const result = employee.find((emp) => parseInt(emp.uniqueNum) === id);
   console.log(result);
   if (result) {
-    const timeRecord = result.timeRecord[0];
-    timeRecord.startTime = new Date().toLocaleString();
+    result.timeRecord.push({
+      date: new Date().toLocaleString(),
+      startTime: new Date().toLocaleString(),
+      endTime: null,
+      totalWorkingHours: 0,
+    });
+    const start = result.timeRecord[result.timeRecord.length - 1].startTime;
     res.status(200).send({
-      message: `you've been successfully clocked in at  ${timeRecord.startTime}`,
+      message: `you've been successfully clocked in at  ${start}`,
     });
     console.log(result);
   } else {
@@ -68,7 +66,7 @@ app.get("/clock-out/:id", (req, res) => {
   const id = parseInt(req.params.id);
   const result = employee.find((emp) => parseInt(emp.uniqueNum) === id);
   if (result) {
-    const timeRecord = result.timeRecord[0];
+    const timeRecord = result.timeRecord[result.timeRecord.length - 1];
     if (timeRecord.startTime === null) {
       res.status(400).send({ message: "you have to clock in first" });
     } else {
@@ -88,7 +86,18 @@ app.get("/clock-out/:id", (req, res) => {
 });
 
 app.post("/add-employee", (req, res) => {
-
+  const newEmployee = {
+    id: employee.length + 1,
+    name: req.body.name,
+    uniqueNum: req.body.uniqueNum,
+    timeRecord: [],
+  };
+  try {
+    employee.push(newEmployee);
+    res.status(201).json(employee);
+  } catch (err) {
+    res.status(400).send({ message: "employee not added" });
+  }
 });
 
 app.listen(PORT, () => {
