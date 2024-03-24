@@ -17,6 +17,7 @@ app.get("/", (req, res) => {
 
 app.post("/check-in", (req, res) => {
   const pin = req.body.pin; // get the pin from the request body
+  console.log(pin)
   const selection = req.body.selection;
   employeeService
     .checkInEmployee(pin)
@@ -54,7 +55,7 @@ app.get("/clock-out/:id", async (req, res) => {
     res.status(422).send({ message: err });
   }
 });
-
+// Add - employee
 app.post("/add-employee", (req, res) => {
   employeeService
     .addEmployee(req.body.name, req.body.uniqueNum)
@@ -90,6 +91,19 @@ app.get("/employee/:uniqueNum", async (req, res) => {
     .catch((err) => {
       res.status(422).send({ message: msg });
     });
+});
+
+app.post("/allEmployees/", async (req, res) => {
+  const date = req.body.date;
+  console.log(date);
+  try {
+    const msg = await employeeService.getAllEmployeeByDate(
+      new Date(date)
+    );
+    res.json({ message: msg });
+  } catch (err) {
+    res.status(422).send({ message: err });
+  }
 });
 
 employeeService

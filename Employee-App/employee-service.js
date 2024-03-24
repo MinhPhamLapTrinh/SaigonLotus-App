@@ -41,7 +41,6 @@ export function addEmployee(name, uniqueNum) {
     const newEmployee = new Employee({
       employeeName: name,
       uniqueNum: uniqueNum,
-      // timeRecord: [timeRecordSchema],
     });
 
     newEmployee
@@ -142,5 +141,34 @@ export function employeeClockOut(id) {
             });
         }
       });
+  });
+}
+
+export function getAllEmployeeByDate(date) {
+  return new Promise(function (resolve, reject) {
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+    Employee.find({}).then((employees) => {
+      const filteredEmployees = employees.map((emp) => {
+        return emp.timeRecord
+          .filter((time) => {
+            return (
+              new Date(time.date) >= startOfDay &&
+              new Date(time.date) <= endOfDay
+            );
+          })
+          .map((filteredDate) => {
+            return {
+              employeeName: emp.employeeName,
+              startTime: filteredDate.startTime.toLocaleString(),
+              endTime: filteredDate.endTime.toLocaleString(),
+              totalWorkingHours: filteredDate.totalWorkingHours,
+            };
+          });
+      });
+      resolve(filteredEmployees);
+    });
   });
 }
