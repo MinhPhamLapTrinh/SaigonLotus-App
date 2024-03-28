@@ -114,11 +114,14 @@ export function employeeClockOut(id) {
         ) {
           reject("You have to clock in first!");
         } else {
-          const endTime = new Date().toLocaleString();
-          const start = new Date(timeRecord.startTime).getHours();
-          console.log(start);
-          const end = new Date(timeRecord.endTime).getHours();
-          const totalWorkingHours = end - start;
+          const endTime = new Date();
+          const start = new Date(timeRecord.startTime).getTime();
+          const end = endTime.getTime();
+          const totalWorkingHours = (end - start) / (1000 * 60 * 60);
+          const totalHours = Math.floor(totalWorkingHours);
+          const totalMinutes = Math.floor(
+            (totalWorkingHours - totalHours) * 60
+          );
           Employee.updateOne(
             {
               _id: id,
@@ -133,7 +136,7 @@ export function employeeClockOut(id) {
           )
             .then(() => {
               resolve(
-                `you've been successfully clocked out at  ${endTime}. Total working hours: ${totalWorkingHours} hours.`
+                `you've been successfully clocked out at  ${endTime}. Total working hours: ${totalHours} hours and ${totalMinutes} minutes.`
               );
             })
             .catch((err) => {
@@ -150,25 +153,29 @@ export function getAllEmployeeByDate(date) {
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(date);
     endOfDay.setHours(23, 59, 59, 999);
-    Employee.find({}).then((employees) => {
-      const filteredEmployees = employees.map((emp) => {
-        return emp.timeRecord
-          .filter((time) => {
-            return (
-              new Date(time.date) >= startOfDay &&
-              new Date(time.date) <= endOfDay
-            );
-          })
-          .map((filteredDate) => {
-            return {
-              employeeName: emp.employeeName,
-              startTime: filteredDate.startTime.toLocaleString(),
-              endTime: filteredDate.endTime.toLocaleString(),
-              totalWorkingHours: filteredDate.totalWorkingHours,
-            };
-          });
+    Employee.find({})
+      .then((employees) => {
+        const filteredEmployees = employees.flatMap((emp) => {
+          return emp.timeRecord
+            .filter((time) => {
+              return (
+                new Date(time.date) >= startOfDay &&
+                new Date(time.date) <= endOfDay
+              );
+            })
+            .map((filteredDate) => {
+              return {
+                employeeName: emp.employeeName,
+                startTime: filteredDate.startTime.toLocaleString(),
+                endTime: filteredDate.endTime.toLocaleString(),
+                totalWorkingHours: filteredDate.totalWorkingHours,
+              };
+            });
+        });
+        resolve(filteredEmployees);
+      })
+      .catch((err) => {
+        reject(err);
       });
-      resolve(filteredEmployees);
-    });
   });
 }
